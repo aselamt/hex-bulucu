@@ -115,6 +115,15 @@
       line-height: 0.95;
       animation: riseIn 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
     }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: -30%;
+      background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.28) 50%, transparent 65%);
+      transform: translateX(-55%) rotate(8deg);
+      animation: heroSweep 9s ease-in-out infinite;
+      pointer-events: none;
+    }
     .grain {
       position: absolute;
       inset: 0;
@@ -138,6 +147,10 @@
     .hero-card {
       animation: riseIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
     }
+    .hero-card > * {
+      position: relative;
+      z-index: 1;
+    }
     .floating-panel {
       animation: floatCard 7s ease-in-out infinite;
     }
@@ -153,6 +166,62 @@
     .section-card textarea:focus {
       transform: translateY(-1px);
       box-shadow: 0 0 0 5px rgba(113, 113, 122, 0.08);
+    }
+    #add-section,
+    #theme-toggle,
+    .section-card button,
+    .color-box button {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    #add-section::after,
+    #theme-toggle::after,
+    .section-card button::after,
+    .color-box button::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%);
+      transform: translateX(-130%);
+      transition: transform 0.6s ease;
+    }
+    #add-section:hover::after,
+    #theme-toggle:hover::after,
+    .section-card button:hover::after,
+    .color-box button:hover::after {
+      transform: translateX(130%);
+    }
+    #add-section {
+      animation: pulseLift 3.8s ease-in-out infinite;
+    }
+    #add-section:hover,
+    #theme-toggle:hover,
+    .section-card button:hover,
+    .color-box button:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+    }
+    #sections-container {
+      scroll-behavior: smooth;
+    }
+    .count-pop {
+      animation: countPulse 360ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .toast-pop {
+      animation: toastPop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .modal-open {
+      animation: modalFadeIn 280ms ease both;
+    }
+    .modal-open #modalContent {
+      animation: modalSpring 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .modal-closing #modalContent {
+      animation: modalOut 220ms ease both;
+    }
+    .loading-ring {
+      animation: orbit 1.1s linear infinite;
     }
     #toast {
       will-change: transform, opacity;
@@ -213,6 +282,50 @@
       50% { transform: translate3d(6px, -6px, 0); }
       75% { transform: translate3d(-4px, -2px, 0); }
       100% { transform: translate3d(0, 0, 0); }
+    }
+
+    @keyframes heroSweep {
+      0%, 100% { transform: translateX(-58%) rotate(8deg); opacity: 0; }
+      12% { opacity: 0.35; }
+      45% { transform: translateX(58%) rotate(8deg); opacity: 0.18; }
+      70% { opacity: 0; }
+    }
+
+    @keyframes pulseLift {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-2px) scale(1.02); }
+    }
+
+    @keyframes countPulse {
+      0% { transform: scale(0.9); opacity: 0.5; }
+      70% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes toastPop {
+      0% { transform: translate(-50%, 12px) scale(0.96); }
+      100% { transform: translate(-50%, 0) scale(1); }
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes modalSpring {
+      0% { opacity: 0; transform: translateY(18px) scale(0.94); }
+      70% { opacity: 1; transform: translateY(-3px) scale(1.01); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes modalOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(14px) scale(0.96); }
+    }
+
+    @keyframes orbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -323,7 +436,7 @@
         </div>
         <div class="p-6 max-h-[60vh] overflow-y-auto" id="aiResponseContainer">
           <div id="aiLoading" class="flex flex-col items-center justify-center gap-4 py-8">
-            <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div class="loading-ring w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
             <p class="text-xs text-zinc-500 font-medium">Gemini çalışıyor...</p>
           </div>
           <div id="aiResult" class="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed"></div>
@@ -371,6 +484,9 @@
 
     function showToast(text) {
       toast.textContent = `${text} kopyalandı!`;
+      toast.classList.remove('toast-pop');
+      void toast.offsetWidth;
+      toast.classList.add('toast-pop');
       toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
       toast.classList.add('opacity-100', 'translate-y-0');
       setTimeout(() => {
@@ -482,16 +598,19 @@
       
       grid.innerHTML = '';
       countLabel.textContent = hexes.length;
+      countLabel.classList.remove('count-pop');
+      void countLabel.offsetWidth;
+      countLabel.classList.add('count-pop');
 
-      hexes.forEach(hex => {
-        grid.appendChild(createColorBox(hex, accentColor));
+      hexes.forEach((hex, index) => {
+        grid.appendChild(createColorBox(hex, accentColor, index));
       });
     }
 
-    function createColorBox(hex, accent) {
+    function createColorBox(hex, accent, index = 0) {
       const container = document.createElement('div');
       container.className = `color-box group relative aspect-square cursor-pointer overflow-hidden rounded-[1.25rem] border border-white/20`;
-      container.style.animationDelay = `${Math.random() * 140}ms`;
+      container.style.animationDelay = `${index * 45}ms`;
       
       container.innerHTML = `
         <div class="absolute inset-0" style="background-color: ${hex};"></div>
@@ -523,12 +642,16 @@
 
     function openModal(title) {
       modalTitle.textContent = title;
+      aiModal.classList.remove('modal-closing');
+      aiModal.classList.add('modal-open');
       aiModal.classList.remove('opacity-0', 'pointer-events-none');
       modalContent.classList.replace('scale-95', 'scale-100');
       aiResult.innerHTML = ''; suggestedPalette.innerHTML = ''; aiLoading.classList.remove('hidden');
     }
 
     function closeModal() {
+      aiModal.classList.remove('modal-open');
+      aiModal.classList.add('modal-closing');
       aiModal.classList.add('opacity-0', 'pointer-events-none');
       modalContent.classList.replace('scale-100', 'scale-95');
     }
