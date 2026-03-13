@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="tr" id="html-root" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HEX Renk Bulucu - Esnek Yan Yana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(var(--border))",
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg-main: #fff1f2;
+      --bg-accent: #eefcf4;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-border: rgba(24, 24, 27, 0.08);
+      --text-main: #18181b;
+      --text-soft: #71717a;
+      --shadow-lg: 0 24px 80px rgba(15, 23, 42, 0.12);
+    }
+
+    .dark {
+      --bg-main: #140f1f;
+      --bg-accent: #102022;
+      --panel: rgba(24, 24, 27, 0.82);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #fafafa;
+      --text-soft: #a1a1aa;
+      --shadow-lg: 0 28px 100px rgba(0, 0, 0, 0.42);
+    }
+
+    html {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(244, 114, 182, 0.42), transparent 24%),
+        radial-gradient(circle at 84% 16%, rgba(59, 130, 246, 0.34), transparent 26%),
+        radial-gradient(circle at 72% 78%, rgba(34, 197, 94, 0.28), transparent 24%),
+        radial-gradient(circle at 28% 88%, rgba(251, 191, 36, 0.3), transparent 26%),
+        radial-gradient(circle at 52% 42%, rgba(168, 85, 247, 0.22), transparent 30%),
+        linear-gradient(135deg, var(--bg-main), var(--bg-accent));
+    }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      overflow-x: hidden;
+      background: transparent;
+      color: var(--text-main);
+      animation: pageReveal 900ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    textarea {
+      font-family: 'IBM Plex Mono', 'Consolas', 'Courier New', monospace;
+    }
+    .color-box {
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, filter 0.28s ease;
+      animation: tileReveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .section-anim {
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    * {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .app-shell {
+      position: relative;
+      isolation: isolate;
+    }
+    .app-shell::before,
+    .app-shell::after {
+      content: "";
+      position: absolute;
+      inset: auto;
+      border-radius: 999px;
+      filter: blur(20px);
+      opacity: 0.8;
+      z-index: -1;
+      animation: blobDrift 16s ease-in-out infinite alternate;
+    }
+    .app-shell::before {
+      width: 22rem;
+      height: 22rem;
+      top: 3rem;
+      right: -2rem;
+      background: rgba(236, 72, 153, 0.2);
+    }
+    .app-shell::after {
+      width: 20rem;
+      height: 20rem;
+      left: -4rem;
+      bottom: 2rem;
+      background: rgba(59, 130, 246, 0.2);
+      animation-duration: 18s;
+      animation-delay: -6s;
+    }
+    .hero-card,
+    .floating-panel,
+    .section-card,
+    .modal-card {
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-lg);
+    }
+    .hero-title {
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+      animation: riseIn 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .grain {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.14;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 22px 22px;
+      mask-image: radial-gradient(circle at center, black, transparent 88%);
+      animation: grainShift 12s linear infinite;
+    }
+    .section-card:hover {
+      transform: translateY(-2px);
+    }
+    .color-box:hover {
+      transform: translateY(-6px) scale(1.025) rotate(-0.4deg);
+      box-shadow: 0 18px 30px rgba(15, 23, 42, 0.22);
+      filter: saturate(1.08);
+    }
+    .hero-card {
+      animation: riseIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .floating-panel {
+      animation: floatCard 7s ease-in-out infinite;
+    }
+    .floating-panel:nth-child(2) {
+      animation-delay: -2.2s;
+    }
+    .floating-panel:nth-child(3) {
+      animation-delay: -4.1s;
+    }
+    .section-card {
+      animation: sectionEnter 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .section-card textarea:focus {
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 5px rgba(113, 113, 122, 0.08);
+    }
+    #toast {
+      will-change: transform, opacity;
+    }
+
+    @keyframes pageReveal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes riseIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes sectionEnter {
+      from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes tileReveal {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes floatCard {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes blobDrift {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(18px, -14px, 0) scale(1.06); }
+      100% { transform: translate3d(-10px, 18px, 0) scale(0.96); }
+    }
+
+    @keyframes grainShift {
+      0% { transform: translate3d(0, 0, 0); }
+      25% { transform: translate3d(-8px, 6px, 0); }
+      50% { transform: translate3d(6px, -6px, 0); }
+      75% { transform: translate3d(-4px, -2px, 0); }
+      100% { transform: translate3d(0, 0, 0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body,
+      .hero-card,
+      .hero-title,
+      .floating-panel,
+      .section-card,
+      .color-box,
+      .grain,
+      .app-shell::before,
+      .app-shell::after {
+        animation: none !important;
+      }
+
+      .color-box,
+      .section-anim,
+      * {
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+      border-radius: 10px;
+    }
+    .light ::-webkit-scrollbar-thumb {
+      background: #d4d4d8;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-900 dark:text-zinc-100" id="body">
+
+  <div class="app-shell h-screen flex flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+    <div class="grain"></div>
+
+    <div class="hero-card relative mb-5 overflow-hidden rounded-[2rem] border border-white/35 bg-[var(--panel)] px-5 py-5 sm:px-7 sm:py-6 shrink-0">
+      <div class="absolute inset-0 bg-gradient-to-br from-white/35 via-white/10 to-transparent dark:from-white/10 dark:via-white/[0.03] dark:to-transparent"></div>
+      <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">
+          <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--text-soft)] dark:border-white/10 dark:bg-white/5">
+            Palette Studio
+          </div>
+          <h1 class="hero-title text-4xl font-bold text-[var(--text-main)] sm:text-5xl lg:text-6xl">
+            HEX renklerini daha şık bir çalışma alanında yakala.
+          </h1>
+          <p class="mt-3 max-w-xl text-sm leading-6 text-[var(--text-soft)] sm:text-base">
+            Kod bloklarından renkleri ayıkla, paneller arasında karşılaştır ve tek tıkla kopyala. Arayüz artık daha editorial, daha sıcak ve daha okunaklı.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 sm:gap-4">
+          <div class="floating-panel rounded-2xl border border-black/5 bg-white/68 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+            <div class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Panel</div>
+            <div class="mt-2 text-2xl font-bold text-[var(--text-main)]">4</div>
+          </div>
+          <div class="floating-panel rounded-2xl border border-black/5 bg-white/68 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+            <div class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Tema</div>
+            <div class="mt-2 text-2xl font-bold text-[var(--text-main)]">2</div>
+          </div>
+          <div class="floating-panel rounded-2xl border border-black/5 bg-white/68 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+            <div class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Akış</div>
+            <div class="mt-2 text-2xl font-bold text-[var(--text-main)]">∞</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-5 flex items-center justify-between gap-3 shrink-0">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[0.28em] text-[var(--text-soft)]">Çalışma Alanı</p>
+        <p class="mt-1 text-sm text-[var(--text-soft)]">Yan yana panellerle hızlı renk tarama ve kıyaslama.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="add-section" title="Yeni Bölüm Ekle"
+                class="flex items-center justify-center w-11 h-11 rounded-2xl bg-[var(--text-main)] hover:scale-[1.03] text-white shadow-lg shadow-black/10 transition-all active:scale-95 disabled:opacity-30">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+
+        <button id="theme-toggle" 
+                class="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-black/5 bg-white/68 text-[var(--text-main)] dark:border-white/10 dark:bg-white/5 shadow-sm transition-all active:scale-95">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="sections-container" class="flex flex-row gap-4 flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden pb-1">
+    </div>
+
+    <!-- AI Results Modal -->
+    <div id="aiModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+      <div class="modal-card w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/10 bg-[var(--panel)] transform scale-95 transition-transform duration-300" id="modalContent">
+        <div class="p-5 border-b border-white/10 flex justify-between items-center">
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <span id="modalIcon">✨</span> <span id="modalTitle">Analiz</span>
+          </h2>
+          <button onclick="closeModal()" class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="p-6 max-h-[60vh] overflow-y-auto" id="aiResponseContainer">
+          <div id="aiLoading" class="flex flex-col items-center justify-center gap-4 py-8">
+            <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-zinc-500 font-medium">Gemini çalışıyor...</p>
+          </div>
+          <div id="aiResult" class="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed"></div>
+          <div id="suggestedPalette" class="mt-6 flex gap-2 flex-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 border border-white/10 bg-zinc-900/90 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-2xl opacity-0 translate-y-4 pointer-events-none transition-all duration-300 z-50 backdrop-blur-md">
+      Kopyalandı!
+    </div>
+
+  </div>
+
+  <script>
+    const apiKey = ""; 
+    const html = document.getElementById('html-root');
+    const toggleBtn = document.getElementById('theme-toggle');
+    const addBtn = document.getElementById('add-section');
+    const themeIcon = document.getElementById('theme-icon');
+    const toast = document.getElementById('toast');
+    const aiModal = document.getElementById('aiModal');
+    const modalContent = document.getElementById('modalContent');
+    const aiResult = document.getElementById('aiResult');
+    const aiLoading = document.getElementById('aiLoading');
+    const modalTitle = document.getElementById('modalTitle');
+    const suggestedPalette = document.getElementById('suggestedPalette');
+    const sectionsContainer = document.getElementById('sections-container');
+
+    let sectionCount = 0;
+    const MAX_SECTIONS = 4;
+    const ACCENT_COLORS = ['blue', 'purple', 'emerald', 'orange'];
+    const HEX_REGEX = /#([0-9a-fA-F]{3,8})\b/gi;
+
+    function copyText(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showToast(text);
+    }
+
+    function showToast(text) {
+      toast.textContent = `${text} kopyalandı!`;
+      toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2000);
+    }
+
+    function setTheme(isDark) {
+      if (isDark) {
+        html.classList.add('dark');
+        html.classList.remove('light');
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('hex-finder-theme', 'dark');
+      } else {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('hex-finder-theme', 'light');
+      }
+    }
+
+    const savedTheme = localStorage.getItem('hex-finder-theme');
+    setTheme(savedTheme ? savedTheme === 'dark' : true);
+    toggleBtn.addEventListener('click', () => setTheme(!html.classList.contains('dark')));
+
+    function createSectionUI(id) {
+      const color = ACCENT_COLORS[id % ACCENT_COLORS.length];
+      const sectionId = `section-${id}`;
+      
+      const div = document.createElement('div');
+      div.id = sectionId;
+      div.className = "section-card section-anim flex-1 min-w-[290px] sm:min-w-0 flex flex-col rounded-[2rem] border overflow-hidden";
+      div.style.animationDelay = `${id * 90}ms`;
+      div.style.background = "var(--panel)";
+      div.style.borderColor = "var(--panel-border)";
+      
+      div.innerHTML = `
+        <!-- Panel Header -->
+        <div class="p-4 sm:p-5 border-b border-black/5 dark:border-white/10 flex justify-between items-center shrink-0">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-${color}-500 shadow-lg shadow-${color}-500/40"></span>
+            <div>
+              <span class="block text-[10px] font-black uppercase tracking-[0.24em] text-[var(--text-soft)] truncate">Bölüm ${id + 1}</span>
+              <span class="block text-xs font-medium text-[var(--text-main)]">Renk Tarayıcı</span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="analyzeTheme('${sectionId}')" class="rounded-full border border-black/5 bg-white/75 px-2.5 py-1 text-[10px] font-bold text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">Analiz</button>
+            ${id > 0 ? `<button onclick="removeSection('${sectionId}')" class="rounded-full border border-black/5 bg-white/75 px-2.5 py-1 text-[10px] font-bold text-zinc-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">Sil</button>` : ''}
+          </div>
+        </div>
+
+        <div class="flex-1 flex flex-col min-h-0 p-4 sm:p-5 gap-4">
+          <div class="h-1/3 min-h-[150px] shrink-0">
+            <textarea 
+              id="input-${sectionId}"
+              class="w-full h-full rounded-[1.4rem] border border-black/5 bg-white/82 p-4 text-[11px] text-[var(--text-main)] outline-none resize-none dark:border-white/10 dark:bg-zinc-950/80 focus:border-zinc-400"
+              placeholder="#HEX&#10;#3B82F6&#10;#10B981"></textarea>
+          </div>
+
+          <div class="flex-1 flex flex-col min-h-0">
+             <div class="flex justify-between items-center mb-2 shrink-0">
+               <span class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Yakalanan Renkler</span>
+               <span class="rounded-full bg-zinc-900/5 px-2 py-1 text-[10px] font-black text-zinc-600 dark:bg-white/5 dark:text-zinc-300" id="count-${sectionId}">0</span>
+             </div>
+             <div id="grid-${sectionId}" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 overflow-y-auto pr-1 flex-1 content-start">
+             </div>
+          </div>
+        </div>
+      `;
+      
+      sectionsContainer.appendChild(div);
+      
+      const textarea = div.querySelector('textarea');
+      textarea.addEventListener('input', () => renderSection(sectionId, color));
+      
+      if (id === 0) {
+        textarea.value = `#3B82F6\n#10B981\n#F59E0B\n#EF4444`;
+        renderSection(sectionId, color);
+      }
+    }
+
+    function addSection() {
+      if (sectionCount < MAX_SECTIONS) {
+        createSectionUI(sectionCount);
+        sectionCount++;
+        if (sectionCount === MAX_SECTIONS) addBtn.disabled = true;
+      }
+    }
+
+    function removeSection(sectionId) {
+      const el = document.getElementById(sectionId);
+      el.classList.add('opacity-0', 'scale-90');
+      setTimeout(() => {
+        el.remove();
+        sectionCount--;
+        addBtn.disabled = false;
+      }, 300);
+    }
+
+    function renderSection(sectionId, accentColor) {
+      const input = document.getElementById(`input-${sectionId}`);
+      const grid = document.getElementById(`grid-${sectionId}`);
+      const countLabel = document.getElementById(`count-${sectionId}`);
+      
+      const matches = input.value.match(HEX_REGEX) || [];
+      const hexes = [...new Set(matches.filter(h => [4, 5, 7, 9].includes(h.length)).map(h => h.toUpperCase()))];
+      
+      grid.innerHTML = '';
+      countLabel.textContent = hexes.length;
+
+      hexes.forEach(hex => {
+        grid.appendChild(createColorBox(hex, accentColor));
+      });
+    }
+
+    function createColorBox(hex, accent) {
+      const container = document.createElement('div');
+      container.className = `color-box group relative aspect-square cursor-pointer overflow-hidden rounded-[1.25rem] border border-white/20`;
+      container.style.animationDelay = `${Math.random() * 140}ms`;
+      
+      container.innerHTML = `
+        <div class="absolute inset-0" style="background-color: ${hex};"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/45"></div>
+        <div class="absolute top-2 left-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 z-10 scale-90 origin-top-left transition-all">
+          <button onclick="event.stopPropagation(); analyzeColor('${hex}')" class="rounded-full bg-black/65 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">Analiz</button>
+          <button onclick="event.stopPropagation(); generatePalette('${hex}')" class="rounded-full bg-black/65 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">Palet</button>
+        </div>
+        <div class="absolute inset-x-0 bottom-0 p-2">
+           <div class="rounded-xl bg-black/70 px-2 py-1.5 text-[9px] font-mono text-white backdrop-blur-md">
+            <span class="truncate block">${hex}</span>
+          </div>
+        </div>
+      `;
+
+      container.addEventListener('click', () => copyText(hex));
+      return container;
+    }
+
+    // AI logic (simplified for speed)
+    async function callGemini(prompt, json = false) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const payload = { contents: [{ parts: [{ text: prompt }] }] };
+      if(json) payload.generationConfig = { responseMimeType: "application/json" };
+      const res = await fetch(url, { method:'POST', body: JSON.stringify(payload) });
+      const d = await res.json();
+      return d.candidates[0].content.parts[0].text;
+    }
+
+    function openModal(title) {
+      modalTitle.textContent = title;
+      aiModal.classList.remove('opacity-0', 'pointer-events-none');
+      modalContent.classList.replace('scale-95', 'scale-100');
+      aiResult.innerHTML = ''; suggestedPalette.innerHTML = ''; aiLoading.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      aiModal.classList.add('opacity-0', 'pointer-events-none');
+      modalContent.classList.replace('scale-100', 'scale-95');
+    }
+
+    async function analyzeColor(hex) {
+      openModal(`${hex} Analizi`);
+      const r = await callGemini(`${hex} rengini 2 cümlede analiz et.`);
+      aiLoading.classList.add('hidden'); aiResult.innerHTML = r;
+    }
+
+    async function generatePalette(hex) {
+      openModal(`${hex} Paleti`);
+      const r = await callGemini(`${hex} için 4 uyumlu HEX içeren JSON listesi ver. Format: {"palette":["#..."]}`, true);
+      const data = JSON.parse(r);
+      aiLoading.classList.add('hidden');
+      data.palette.forEach(c => {
+        const d = document.createElement('div');
+        d.className = "w-10 h-10 rounded border border-zinc-800";
+        d.style.backgroundColor = c;
+        d.onclick = () => copyText(c);
+        suggestedPalette.appendChild(d);
+      });
+    }
+
+    async function analyzeTheme(sid) {
+      const text = document.getElementById(`input-${sid}`).value;
+      openModal("Tema Analizi");
+      const r = await callGemini(`Şu metindeki renklerin temasını 2 cümlede yorumla: ${text}`);
+      aiLoading.classList.add('hidden'); aiResult.innerHTML = r;
+    }
+
+    addBtn.addEventListener('click', addSection);
+    window.addEventListener('load', () => {
+      addSection();
+      addSection();
+    });
+  </script>
+</body>
+</html>
