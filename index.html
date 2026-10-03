@@ -1,462 +1,1172 @@
 <!DOCTYPE html>
-<html lang="tr" id="html-root" class="dark">
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HEX Renk Bulucu - Esnek Yan Yana</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>HEX Renk Bulucu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            border: "hsl(var(--border))",
-          }
-        }
-      }
-    }
+    // Tema yanıp sönmesin diye sayfa çizilmeden önce uygula
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('hex-finder-theme'); } catch (e) {}
+      if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+    })();
   </script>
   <style>
     :root {
       --bg-main: #fff1f2;
       --bg-accent: #eefcf4;
       --panel: rgba(255, 255, 255, 0.82);
-      --panel-border: rgba(24, 24, 27, 0.08);
+      --panel-border: rgba(24, 24, 27, 0.09);
+      --chip: rgba(255, 255, 255, 0.75);
+      --chip-border: rgba(24, 24, 27, 0.08);
+      --field: rgba(255, 255, 255, 0.9);
       --text-main: #18181b;
-      --text-soft: #71717a;
+      --text-soft: #5f5f68;
+      --on-strong: #fafafa;
+      --focus: #2563eb;
       --shadow-lg: 0 24px 80px rgba(15, 23, 42, 0.12);
+      --font-ui: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
-
-    .dark {
+    :root[data-theme="dark"] {
       --bg-main: #140f1f;
       --bg-accent: #102022;
       --panel: rgba(24, 24, 27, 0.82);
-      --panel-border: rgba(255, 255, 255, 0.08);
+      --panel-border: rgba(255, 255, 255, 0.09);
+      --chip: rgba(255, 255, 255, 0.06);
+      --chip-border: rgba(255, 255, 255, 0.1);
+      --field: rgba(9, 9, 11, 0.8);
       --text-main: #fafafa;
       --text-soft: #a1a1aa;
+      --on-strong: #18181b;
+      --focus: #60a5fa;
       --shadow-lg: 0 28px 100px rgba(0, 0, 0, 0.42);
     }
 
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
     html {
+      min-height: 100%;
       background:
-        radial-gradient(circle at 12% 18%, rgba(244, 114, 182, 0.42), transparent 24%),
-        radial-gradient(circle at 84% 16%, rgba(59, 130, 246, 0.34), transparent 26%),
-        radial-gradient(circle at 72% 78%, rgba(34, 197, 94, 0.28), transparent 24%),
-        radial-gradient(circle at 28% 88%, rgba(251, 191, 36, 0.3), transparent 26%),
-        radial-gradient(circle at 52% 42%, rgba(168, 85, 247, 0.22), transparent 30%),
+        radial-gradient(circle at 12% 18%, rgba(244, 114, 182, 0.38), transparent 24%),
+        radial-gradient(circle at 84% 16%, rgba(59, 130, 246, 0.30), transparent 26%),
+        radial-gradient(circle at 72% 78%, rgba(34, 197, 94, 0.24), transparent 24%),
+        radial-gradient(circle at 28% 88%, rgba(251, 191, 36, 0.26), transparent 26%),
         linear-gradient(135deg, var(--bg-main), var(--bg-accent));
+      background-attachment: fixed;
+    }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-ui);
+      color: var(--text-main);
+      background: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    button:focus-visible, textarea:focus-visible, input:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
     }
 
-    body {
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      overflow-x: hidden;
-      background: transparent;
-      color: var(--text-main);
+    .app {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 100dvh;
+      padding: 20px clamp(14px, 3vw, 32px);
     }
-    textarea {
-      font-family: 'IBM Plex Mono', 'Consolas', 'Courier New', monospace;
-    }
-    .color-box {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .section-anim {
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    * {
-      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-    }
-    .app-shell {
-      position: relative;
-      isolation: isolate;
-    }
-    .app-shell::before,
-    .app-shell::after {
-      content: "";
-      position: absolute;
-      inset: auto;
-      border-radius: 999px;
-      filter: blur(20px);
-      opacity: 0.8;
-      z-index: -1;
-    }
-    .app-shell::before {
-      width: 22rem;
-      height: 22rem;
-      top: 3rem;
-      right: -2rem;
-      background: rgba(236, 72, 153, 0.2);
-    }
-    .app-shell::after {
-      width: 20rem;
-      height: 20rem;
-      left: -4rem;
-      bottom: 2rem;
-      background: rgba(59, 130, 246, 0.2);
-    }
-    .hero-card,
-    .floating-panel,
-    .section-card,
-    .modal-card {
+
+    /* ---------- Üst bölüm ---------- */
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 24px;
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--shadow-lg);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
+      animation: rise 600ms var(--ease) both;
+    }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 3px 12px;
+      border: 1px solid var(--chip-border);
+      border-radius: 999px;
+      background: var(--chip);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+    .lede {
+      margin: 8px 0 0;
+      max-width: 38rem;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: var(--text-soft);
+    }
+    .stats { display: flex; gap: 10px; }
+    .stat {
+      min-width: 78px;
+      padding: 10px 14px;
+      border: 1px solid var(--chip-border);
+      border-radius: 16px;
+      background: var(--chip);
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+    .stat-value {
+      margin-top: 4px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- Araç çubuğu ---------- */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .toolbar-title { margin: 0; font-size: 0.9rem; color: var(--text-soft); }
+    .toolbar-title strong {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+    }
+    .toolbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+    .seg {
+      display: inline-flex;
+      padding: 3px;
+      border: 1px solid var(--chip-border);
+      border-radius: 14px;
+      background: var(--chip);
+    }
+    .seg button {
+      padding: 6px 12px;
+      border: 0;
+      border-radius: 11px;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-soft);
+    }
+    .seg button[aria-pressed="true"] {
+      background: var(--text-main);
+      color: var(--on-strong);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--chip-border);
+      border-radius: 14px;
+      background: var(--chip);
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform 0.2s var(--ease), box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12); }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; pointer-events: none; }
+    .btn-strong {
+      border-color: transparent;
+      background: var(--text-main);
+      color: var(--on-strong);
+    }
+    .btn svg { width: 16px; height: 16px; flex: none; }
+    .btn .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #a1a1aa;
+    }
+    .btn .dot.on { background: #22c55e; }
+    .theme-icon-sun { display: none; }
+    :root[data-theme="dark"] .theme-icon-sun { display: block; }
+    :root[data-theme="dark"] .theme-icon-moon { display: none; }
+
+    /* ---------- Paneller ---------- */
+    .sections {
+      flex: 1;
+      display: flex;
+      gap: 16px;
+      min-height: 480px;
+      padding-bottom: 4px;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+    }
+    .panel {
+      --accent: #3b82f6;
+      flex: 1 0 min(330px, 88vw);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      background: var(--panel);
       box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      scroll-snap-align: start;
+      animation: rise 520ms var(--ease) both;
+      transition: opacity 0.25s ease, transform 0.25s var(--ease);
     }
-    .hero-title {
-      letter-spacing: -0.05em;
-      line-height: 0.95;
+    .panel.leaving { opacity: 0; transform: scale(0.94); }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--panel-border);
     }
-    .grain {
+    .panel-id { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .panel-dot {
+      flex: none;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+    .panel-name {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+    .panel-sub { display: block; font-size: 12px; font-weight: 500; }
+    .panel-btns { display: flex; gap: 6px; }
+
+    .pill {
+      padding: 4px 11px;
+      border: 1px solid var(--chip-border);
+      border-radius: 999px;
+      background: var(--chip);
+      font-size: 11px;
+      font-weight: 700;
+      transition: transform 0.2s var(--ease), background-color 0.2s ease;
+    }
+    .pill:hover { transform: translateY(-1px); }
+    .pill:active { transform: scale(0.96); }
+    .pill:disabled { opacity: 0.4; pointer-events: none; }
+    .pill.muted { color: var(--text-soft); }
+    .sections[data-single] .btn-remove { display: none; }
+
+    .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 0;
+      padding: 16px;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      flex: none;
+      padding: 14px;
+      border: 1px solid var(--chip-border);
+      border-radius: 20px;
+      background: var(--field);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-main);
+      resize: vertical;
+      min-height: 90px;
+      transition: border-color 0.2s ease;
+    }
+    textarea:focus { border-color: var(--accent); }
+
+    .found { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .found-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .found-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+    .found-tools { display: flex; align-items: center; gap: 6px; }
+    .count {
+      min-width: 26px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--chip);
+      border: 1px solid var(--chip-border);
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .count.pop { animation: pop 360ms var(--ease); }
+
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+      grid-auto-rows: max-content;
+      gap: 8px;
+      min-height: 120px;
+      padding-right: 2px;
+      overflow-y: auto;
+    }
+    .grid:empty::before {
+      content: "Henüz renk yok. Yukarıya HEX kodu yaz ya da yapıştır (#RGB, #RRGGBB, #RRGGBBAA).";
+      grid-column: 1 / -1;
+      padding: 28px 12px;
+      border: 1px dashed var(--chip-border);
+      border-radius: 18px;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+      color: var(--text-soft);
+    }
+
+    /* ---------- Renk kutusu ---------- */
+    .tile {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 1px solid rgba(128, 128, 128, 0.25);
+      border-radius: 18px;
+      transition: transform 0.28s var(--ease), box-shadow 0.28s ease;
+      /* saydamlık için dama zemini */
+      background:
+        conic-gradient(#c9c9cf 25%, #f4f4f6 0 50%, #c9c9cf 0 75%, #f4f4f6 0) 0 0 / 14px 14px;
+    }
+    .tile.is-new { animation: tileIn 420ms var(--ease) both; animation-delay: var(--delay, 0ms); }
+    .tile:hover, .tile:focus-within {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 16px 28px rgba(15, 23, 42, 0.25);
+    }
+    .tile-copy {
       position: absolute;
       inset: 0;
-      pointer-events: none;
-      opacity: 0.14;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
-      background-size: 22px 22px;
-      mask-image: radial-gradient(circle at center, black, transparent 88%);
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: var(--swatch);
+      text-align: left;
     }
-    .section-card:hover {
-      transform: translateY(-2px);
+    .tile-copy::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent 45%, rgba(0,0,0,0.4));
     }
-    .color-box:hover {
-      transform: translateY(-3px) scale(1.01);
-      box-shadow: 0 18px 30px rgba(15, 23, 42, 0.22);
+    .tile-label {
+      position: absolute;
+      left: 6px; right: 6px; bottom: 6px;
+      padding: 5px 7px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
+    .tile-actions {
+      position: absolute;
+      top: 6px; left: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      opacity: 0;
+      transform: translateY(-3px);
+      transition: opacity 0.2s ease, transform 0.2s var(--ease);
     }
-    ::-webkit-scrollbar-track {
+    .tile:hover .tile-actions,
+    .tile:focus-within .tile-actions { opacity: 1; transform: none; }
+    @media (hover: none) {
+      .tile-actions { opacity: 1; transform: none; }
+    }
+    .tile-actions button {
+      padding: 3px 9px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.7);
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .tile-actions button:hover { background: rgba(0, 0, 0, 0.9); }
+
+    /* ---------- Diyaloglar ---------- */
+    dialog {
+      width: min(32rem, calc(100vw - 32px));
+      max-height: calc(100dvh - 48px);
+      padding: 0;
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--shadow-lg);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+    dialog[open] { animation: modalIn 320ms var(--ease) both; }
+    dialog[open]::backdrop { animation: fade 240ms ease both; }
+    .dlg-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .dlg-head h2 { margin: 0; font-size: 1.05rem; }
+    .icon-btn {
+      display: grid;
+      place-items: center;
+      width: 34px; height: 34px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
       background: transparent;
     }
-    .dark ::-webkit-scrollbar-thumb {
-      background: #3f3f46;
-      border-radius: 10px;
+    .icon-btn:hover { background: var(--chip); }
+    .icon-btn svg { width: 18px; height: 18px; }
+    .dlg-body { max-height: 60dvh; padding: 20px; overflow-y: auto; }
+    #aiResult { margin: 0; font-size: 14px; line-height: 1.65; white-space: pre-wrap; }
+    #aiResult.error { color: #ef4444; }
+    .spinner {
+      width: 24px; height: 24px;
+      margin: 24px auto 8px;
+      border: 2px solid #3b82f6;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
     }
-    .light ::-webkit-scrollbar-thumb {
-      background: #d4d4d8;
-      border-radius: 10px;
+    .loading-text { margin: 0 0 24px; font-size: 12px; text-align: center; color: var(--text-soft); }
+    .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .swatch {
+      display: grid;
+      gap: 5px;
+      width: 68px;
+      padding: 0;
+      border: 0;
+      background: none;
+      text-align: center;
     }
+    .swatch i {
+      display: block;
+      height: 52px;
+      border: 1px solid rgba(128, 128, 128, 0.35);
+      border-radius: 14px;
+      background: var(--swatch);
+      transition: transform 0.2s var(--ease);
+    }
+    .swatch:hover i { transform: translateY(-3px); }
+    .swatch span { font-family: var(--font-mono); font-size: 10px; color: var(--text-soft); }
+    .dlg-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .field-label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700; }
+    .field-input {
+      width: 100%;
+      height: 42px;
+      padding: 0 14px;
+      border: 1px solid var(--chip-border);
+      border-radius: 14px;
+      background: var(--field);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-main);
+    }
+    .hint { margin: 10px 0 0; font-size: 12px; line-height: 1.55; color: var(--text-soft); }
+    .hint a { color: inherit; }
+
+    /* ---------- Bildirim ---------- */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 100;
+      max-width: calc(100vw - 32px);
+      padding: 10px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      background: rgba(24, 24, 27, 0.92);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 12px);
+      transition: opacity 0.25s ease, transform 0.3s var(--ease);
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* ---------- Animasyonlar ---------- */
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    @keyframes tileIn { from { opacity: 0; transform: translateY(8px) scale(0.95); } to { opacity: 1; transform: none; } }
+    @keyframes pop { 0% { transform: scale(0.9); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(0.95); } to { opacity: 1; transform: none; } }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 640px) {
+      .app { padding-top: 12px; gap: 12px; }
+      .hero { padding: 16px; border-radius: 22px; }
+      .lede { display: none; }
+      .stats { width: 100%; }
+      .stat { flex: 1; min-width: 0; padding: 8px 10px; }
+      .stat-value { font-size: 1.2rem; }
+      .toolbar-title { display: none; }
+      .toolbar-actions { width: 100%; }
+      .toolbar-actions .seg { margin-right: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(128, 128, 140, 0.45); border-radius: 10px; }
   </style>
 </head>
-<body class="min-h-screen text-slate-900 dark:text-zinc-100" id="body">
+<body>
 
-  <div class="app-shell h-screen flex flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-    <div class="grain"></div>
-
-    <div class="hero-card relative mb-5 overflow-hidden rounded-[2rem] border border-white/35 bg-[var(--panel)] px-5 py-5 sm:px-7 sm:py-6 shrink-0">
-      <div class="absolute inset-0 bg-gradient-to-br from-white/35 via-white/10 to-transparent dark:from-white/10 dark:via-white/[0.03] dark:to-transparent"></div>
-      <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div class="max-w-2xl">
-          <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--text-soft)] dark:border-white/10 dark:bg-white/5">
-            Palette Studio
-          </div>
-          <h1 class="hero-title text-4xl font-bold text-[var(--text-main)] sm:text-5xl lg:text-6xl">
-            HEX renklerini daha şık bir çalışma alanında yakala.
-          </h1>
-          <p class="mt-3 max-w-xl text-sm leading-6 text-[var(--text-soft)] sm:text-base">
-            Kod bloklarından renkleri ayıkla, paneller arasında karşılaştır ve tek tıkla kopyala. Arayüz artık daha editorial, daha sıcak ve daha okunaklı.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3 sm:gap-4">
-          <div class="floating-panel rounded-2xl border border-black/5 bg-white/68 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-            <div class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Panel</div>
-            <div class="mt-2 text-2xl font-bold text-[var(--text-main)]">4</div>
-          </div>
-          <div class="floating-panel rounded-2xl border border-black/5 bg-white/68 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-            <div class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Tema</div>
-            <div class="mt-2 text-2xl font-bold text-[var(--text-main)]">2</div>
-          </div>
-          <div class="floating-panel rounded-2xl border border-black/5 bg-white/68 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-            <div class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Akış</div>
-            <div class="mt-2 text-2xl font-bold text-[var(--text-main)]">∞</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="mb-5 flex items-center justify-between gap-3 shrink-0">
+  <div class="app">
+    <header class="hero">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[0.28em] text-[var(--text-soft)]">Çalışma Alanı</p>
-        <p class="mt-1 text-sm text-[var(--text-soft)]">Yan yana panellerle hızlı renk tarama ve kıyaslama.</p>
+        <span class="eyebrow">Palette Studio</span>
+        <h1>HEX renklerini yakala, karşılaştır, kopyala.</h1>
+        <p class="lede">Kod bloklarından renkleri ayıkla, paneller arasında kıyasla ve tek tıkla HEX, RGB ya da HSL olarak kopyala. Yazdıkların bu tarayıcıda saklanır.</p>
       </div>
-      <div class="flex items-center gap-2">
-        <button id="add-section" title="Yeni Bölüm Ekle"
-                class="flex items-center justify-center w-11 h-11 rounded-2xl bg-[var(--text-main)] hover:scale-[1.03] text-white shadow-lg shadow-black/10 transition-all active:scale-95 disabled:opacity-30">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        </button>
-
-        <button id="theme-toggle" 
-                class="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-black/5 bg-white/68 text-[var(--text-main)] dark:border-white/10 dark:bg-white/5 shadow-sm transition-all active:scale-95">
-          <span id="theme-icon">🌙</span>
-        </button>
+      <div class="stats" aria-live="polite">
+        <div class="stat"><div class="stat-label">Panel</div><div class="stat-value" id="statPanels">0</div></div>
+        <div class="stat"><div class="stat-label">Renk</div><div class="stat-value" id="statColors">0</div></div>
+        <div class="stat"><div class="stat-label">Benzersiz</div><div class="stat-value" id="statUnique">0</div></div>
       </div>
-    </div>
+    </header>
 
-    <div id="sections-container" class="flex flex-row gap-4 flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden pb-1">
-    </div>
-
-    <!-- AI Results Modal -->
-    <div id="aiModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
-      <div class="modal-card w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/10 bg-[var(--panel)] transform scale-95 transition-transform duration-300" id="modalContent">
-        <div class="p-5 border-b border-white/10 flex justify-between items-center">
-          <h2 class="text-lg font-bold flex items-center gap-2">
-            <span id="modalIcon">✨</span> <span id="modalTitle">Analiz</span>
-          </h2>
-          <button onclick="closeModal()" class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
+    <div class="toolbar">
+      <p class="toolbar-title"><strong>Çalışma Alanı</strong>Yan yana panellerle hızlı renk tarama ve kıyaslama.</p>
+      <div class="toolbar-actions">
+        <div class="seg" role="group" aria-label="Kopyalama biçimi" id="formatSeg">
+          <button type="button" data-format="hex" aria-pressed="true">HEX</button>
+          <button type="button" data-format="rgb" aria-pressed="false">RGB</button>
+          <button type="button" data-format="hsl" aria-pressed="false">HSL</button>
         </div>
-        <div class="p-6 max-h-[60vh] overflow-y-auto" id="aiResponseContainer">
-          <div id="aiLoading" class="flex flex-col items-center justify-center gap-4 py-8">
-            <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-xs text-zinc-500 font-medium">Gemini çalışıyor...</p>
-          </div>
-          <div id="aiResult" class="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed"></div>
-          <div id="suggestedPalette" class="mt-6 flex gap-2 flex-wrap"></div>
-        </div>
+        <button type="button" class="btn btn-strong" id="addSection" title="Yeni panel ekle">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M12 4v16m8-8H4"/></svg>
+          Panel ekle
+        </button>
+        <button type="button" class="btn" id="keyBtn" title="Gemini API anahtarı">
+          <span class="dot" id="keyDot"></span> AI anahtarı
+        </button>
+        <button type="button" class="btn" id="themeBtn" title="Temayı değiştir" aria-label="Temayı değiştir">
+          <svg class="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
       </div>
     </div>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 border border-white/10 bg-zinc-900/90 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-2xl opacity-0 translate-y-4 pointer-events-none transition-all duration-300 z-50 backdrop-blur-md">
-      Kopyalandı!
-    </div>
-
+    <main class="sections" id="sections"></main>
   </div>
 
+  <!-- AI sonuç penceresi -->
+  <dialog id="aiModal" aria-labelledby="modalTitle">
+    <div class="dlg-head">
+      <h2 id="modalTitle">Analiz</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Kapat">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="dlg-body" aria-live="polite">
+      <div id="aiLoading">
+        <div class="spinner"></div>
+        <p class="loading-text">Gemini çalışıyor…</p>
+      </div>
+      <p id="aiResult"></p>
+      <div class="swatches" id="suggestedPalette"></div>
+      <div class="dlg-actions" id="aiActions" hidden>
+        <button type="button" class="btn" id="copyPaletteBtn">Hepsini kopyala</button>
+        <button type="button" class="btn" id="paletteToPanelBtn">Yeni panele aktar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- API anahtarı penceresi -->
+  <dialog id="keyModal" aria-labelledby="keyTitle">
+    <div class="dlg-head">
+      <h2 id="keyTitle">Gemini API anahtarı</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Kapat">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form class="dlg-body" id="keyForm" method="dialog">
+      <label class="field-label" for="keyInput">Anahtar</label>
+      <input class="field-input" id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…" />
+      <p class="hint">AI özellikleri (Analiz, Palet) için gereklidir. Anahtarı <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>'dan ücretsiz alabilirsin. Yalnızca bu tarayıcıda saklanır, Google'dan başka yere gönderilmez.</p>
+      <div class="dlg-actions">
+        <button type="submit" class="btn btn-strong">Kaydet</button>
+        <button type="button" class="btn" id="keyClear">Anahtarı sil</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
   <script>
-    const apiKey = ""; 
-    const html = document.getElementById('html-root');
-    const toggleBtn = document.getElementById('theme-toggle');
-    const addBtn = document.getElementById('add-section');
-    const themeIcon = document.getElementById('theme-icon');
-    const toast = document.getElementById('toast');
-    const aiModal = document.getElementById('aiModal');
-    const modalContent = document.getElementById('modalContent');
-    const aiResult = document.getElementById('aiResult');
-    const aiLoading = document.getElementById('aiLoading');
-    const modalTitle = document.getElementById('modalTitle');
-    const suggestedPalette = document.getElementById('suggestedPalette');
-    const sectionsContainer = document.getElementById('sections-container');
+    'use strict';
 
-    let sectionCount = 0;
+    /* ---------- Yardımcılar ---------- */
     const MAX_SECTIONS = 4;
-    const ACCENT_COLORS = ['blue', 'purple', 'emerald', 'orange'];
-    const HEX_REGEX = /#([0-9a-fA-F]{3,8})\b/gi;
+    const ACCENTS = ['#3b82f6', '#a855f7', '#10b981', '#f97316'];
+    // Hafif model önce (hızlı, kısa işler için yeterli); kota/yoğunlukta sıradakine geçilir
+    const MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+    const LS = { theme: 'hex-finder-theme', state: 'hex-finder-state-v2', key: 'hex-finder-gemini-key' };
+    // #RGB, #RGBA, #RRGGBB, #RRGGBBAA — yalnızca geçerli uzunluklar
+    const HEX_RE = /#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})(?![0-9a-z])/gi;
+    const HEX_EXACT = /^#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})$/i;
 
-    function copyText(text) {
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      showToast(text);
+    const store = {
+      get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+      del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+    };
+    const $ = (sel, root = document) => root.querySelector(sel);
+
+    const root = document.documentElement;
+    const sectionsEl = $('#sections');
+    const addBtn = $('#addSection');
+    const toastEl = $('#toast');
+    const aiModal = $('#aiModal');
+    const keyModal = $('#keyModal');
+    const aiResult = $('#aiResult');
+    const aiLoading = $('#aiLoading');
+    const aiActions = $('#aiActions');
+    const paletteEl = $('#suggestedPalette');
+
+    let format = 'hex';
+    let nextId = 0;
+    const panels = []; // { id, el, textarea, grid, count, tiles: Map<hex,{el,label,color}>, hexes }
+
+    /* ---------- Renk dönüşümleri ---------- */
+    function parseHex(hex) {
+      let h = hex.slice(1);
+      if (h.length <= 4) h = [...h].map(c => c + c).join('');
+      const r = parseInt(h.slice(0, 2), 16);
+      const g = parseInt(h.slice(2, 4), 16);
+      const b = parseInt(h.slice(4, 6), 16);
+      const a = h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1;
+      return { hex, r, g, b, a };
+    }
+    function toHsl({ r, g, b }) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+      const l = (max + min) / 2;
+      let h = 0, s = 0;
+      if (d) {
+        s = d / (1 - Math.abs(2 * l - 1));
+        if (max === r) h = ((g - b) / d) % 6;
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h = Math.round(h * 60);
+        if (h < 0) h += 360;
+      }
+      return [h, Math.round(s * 100), Math.round(l * 100)];
+    }
+    function formatColor(c, fmt = format) {
+      const alpha = +c.a.toFixed(2);
+      if (fmt === 'rgb') {
+        return alpha < 1 ? `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})` : `rgb(${c.r}, ${c.g}, ${c.b})`;
+      }
+      if (fmt === 'hsl') {
+        const [h, s, l] = toHsl(c);
+        return alpha < 1 ? `hsla(${h}, ${s}%, ${l}%, ${alpha})` : `hsl(${h}, ${s}%, ${l}%)`;
+      }
+      return c.hex;
+    }
+    function extractHexes(text) {
+      return [...new Set((text.match(HEX_RE) || []).map(h => h.toUpperCase()))];
     }
 
+    /* ---------- Kopyalama ve bildirim ---------- */
+    async function copyText(text, message) {
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand('copy'); } catch (err) {}
+        ta.remove();
+      }
+      showToast(ok ? (message || `${text} kopyalandı`) : 'Kopyalanamadı');
+    }
+
+    let toastTimer;
     function showToast(text) {
-      toast.textContent = `${text} kopyalandı!`;
-      toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-      toast.classList.add('opacity-100', 'translate-y-0');
-      setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-        toast.classList.remove('opacity-100', 'translate-y-0');
-      }, 2000);
+      toastEl.textContent = text;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
     }
 
-    function setTheme(isDark) {
-      if (isDark) {
-        html.classList.add('dark');
-        html.classList.remove('light');
-        themeIcon.textContent = '☀️';
-        localStorage.setItem('hex-finder-theme', 'dark');
-      } else {
-        html.classList.remove('dark');
-        html.classList.add('light');
-        themeIcon.textContent = '🌙';
-        localStorage.setItem('hex-finder-theme', 'light');
+    /* ---------- Tema ---------- */
+    $('#themeBtn').addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      store.set(LS.theme, next);
+    });
+
+    /* ---------- Biçim seçici ---------- */
+    $('#formatSeg').addEventListener('click', e => {
+      const btn = e.target.closest('[data-format]');
+      if (!btn) return;
+      format = btn.dataset.format;
+      for (const b of $('#formatSeg').children) b.setAttribute('aria-pressed', String(b === btn));
+      refreshLabels();
+      persist();
+    });
+    function refreshLabels() {
+      for (const p of panels) {
+        for (const t of p.tiles.values()) {
+          const text = formatColor(t.color);
+          t.label.textContent = text;
+          t.copyBtn.setAttribute('aria-label', `${text} kopyala`);
+        }
       }
     }
 
-    const savedTheme = localStorage.getItem('hex-finder-theme');
-    setTheme(savedTheme ? savedTheme === 'dark' : true);
-    toggleBtn.addEventListener('click', () => setTheme(!html.classList.contains('dark')));
-
-    function createSectionUI(id) {
-      const color = ACCENT_COLORS[id % ACCENT_COLORS.length];
-      const sectionId = `section-${id}`;
-      
-      const div = document.createElement('div');
-      div.id = sectionId;
-      // flex-1: Eşit paylaşım | min-w-0: Daralabilirlik için kritik
-      div.className = "section-card section-anim flex-1 min-w-[290px] sm:min-w-0 flex flex-col rounded-[2rem] border overflow-hidden";
-      div.style.background = "var(--panel)";
-      div.style.borderColor = "var(--panel-border)";
-      
+    /* ---------- Panel yönetimi ---------- */
+    function panelTemplate(accent) {
+      const div = document.createElement('section');
+      div.className = 'panel';
+      div.style.setProperty('--accent', ACCENTS[accent]);
       div.innerHTML = `
-        <!-- Panel Header -->
-        <div class="p-4 sm:p-5 border-b border-black/5 dark:border-white/10 flex justify-between items-center shrink-0">
-          <div class="flex items-center gap-2 overflow-hidden">
-            <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-${color}-500 shadow-lg shadow-${color}-500/40"></span>
+        <div class="panel-head">
+          <div class="panel-id">
+            <span class="panel-dot"></span>
             <div>
-              <span class="block text-[10px] font-black uppercase tracking-[0.24em] text-[var(--text-soft)] truncate">Bölüm ${id + 1}</span>
-              <span class="block text-xs font-medium text-[var(--text-main)]">Renk Tarayıcı</span>
+              <span class="panel-name"></span>
+              <span class="panel-sub">Renk Tarayıcı</span>
             </div>
           </div>
-          <div class="flex gap-2">
-            <button onclick="analyzeTheme('${sectionId}')" class="rounded-full border border-black/5 bg-white/75 px-2.5 py-1 text-[10px] font-bold text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">Analiz</button>
-            ${id > 0 ? `<button onclick="removeSection('${sectionId}')" class="rounded-full border border-black/5 bg-white/75 px-2.5 py-1 text-[10px] font-bold text-zinc-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">Sil</button>` : ''}
+          <div class="panel-btns">
+            <button type="button" class="pill" data-action="theme" title="Panel renklerinin temasını yorumlat">Analiz</button>
+            <button type="button" class="pill muted btn-remove" data-action="remove" title="Paneli sil">Sil</button>
           </div>
         </div>
-
-        <div class="flex-1 flex flex-col min-h-0 p-4 sm:p-5 gap-4">
-          <div class="h-1/3 min-h-[150px] shrink-0">
-            <textarea 
-              id="input-${sectionId}"
-              class="w-full h-full rounded-[1.4rem] border border-black/5 bg-white/82 p-4 text-[11px] text-[var(--text-main)] outline-none resize-none dark:border-white/10 dark:bg-zinc-950/80 focus:border-zinc-400"
-              placeholder="#HEX&#10;#3B82F6&#10;#10B981"></textarea>
+        <div class="panel-body">
+          <textarea spellcheck="false" aria-label="HEX kodlarını buraya yaz" placeholder="#3B82F6&#10;#10B981&#10;color: #f59e0b;"></textarea>
+          <div class="found">
+            <div class="found-head">
+              <span class="found-title">Yakalanan Renkler</span>
+              <div class="found-tools">
+                <button type="button" class="pill" data-action="copy-all">Kopyala</button>
+                <button type="button" class="pill muted" data-action="clear">Temizle</button>
+                <span class="count" data-count>0</span>
+              </div>
+            </div>
+            <div class="grid" role="list"></div>
           </div>
-
-          <div class="flex-1 flex flex-col min-h-0">
-             <div class="flex justify-between items-center mb-2 shrink-0">
-               <span class="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-soft)]">Yakalanan Renkler</span>
-               <span class="rounded-full bg-zinc-900/5 px-2 py-1 text-[10px] font-black text-zinc-600 dark:bg-white/5 dark:text-zinc-300" id="count-${sectionId}">0</span>
-             </div>
-             <div id="grid-${sectionId}" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 overflow-y-auto pr-1 flex-1 content-start">
-             </div>
-          </div>
-        </div>
-      `;
-      
-      sectionsContainer.appendChild(div);
-      
-      const textarea = div.querySelector('textarea');
-      textarea.addEventListener('input', () => renderSection(sectionId, color));
-      
-      if (id === 0) {
-        textarea.value = `#3B82F6\n#10B981\n#F59E0B\n#EF4444`;
-        renderSection(sectionId, color);
-      }
+        </div>`;
+      return div;
     }
 
-    function addSection() {
-      if (sectionCount < MAX_SECTIONS) {
-        createSectionUI(sectionCount);
-        sectionCount++;
-        if (sectionCount === MAX_SECTIONS) addBtn.disabled = true;
-      }
-    }
+    function addSection(text = '', { focus = false } = {}) {
+      if (panels.length >= MAX_SECTIONS) return null;
+      const used = new Set(panels.map(p => p.accent));
+      const accent = ACCENTS.findIndex((_, i) => !used.has(i));
+      const el = panelTemplate(accent);
+      const id = nextId++;
+      el.dataset.id = id;
+      sectionsEl.appendChild(el);
 
-    function removeSection(sectionId) {
-      const el = document.getElementById(sectionId);
-      el.classList.add('opacity-0', 'scale-90');
-      setTimeout(() => {
-        el.remove();
-        sectionCount--;
-        addBtn.disabled = false;
-      }, 300);
-    }
-
-    function renderSection(sectionId, accentColor) {
-      const input = document.getElementById(`input-${sectionId}`);
-      const grid = document.getElementById(`grid-${sectionId}`);
-      const countLabel = document.getElementById(`count-${sectionId}`);
-      
-      const matches = input.value.match(HEX_REGEX) || [];
-      const hexes = [...new Set(matches.filter(h => [4, 5, 7, 9].includes(h.length)).map(h => h.toUpperCase()))];
-      
-      grid.innerHTML = '';
-      countLabel.textContent = hexes.length;
-
-      hexes.forEach(hex => {
-        grid.appendChild(createColorBox(hex, accentColor));
+      const panel = {
+        id, el, accent, hexes: [], tiles: new Map(),
+        textarea: $('textarea', el),
+        grid: $('.grid', el),
+        count: $('[data-count]', el)
+      };
+      panel.textarea.value = text;
+      let timer;
+      panel.textarea.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { renderPanel(panel); persist(); }, 120);
       });
+      panels.push(panel);
+      renderPanel(panel, { silentCount: true });
+      syncChrome();
+      if (focus) {
+        el.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+        panel.textarea.focus({ preventScroll: true });
+      }
+      return panel;
     }
 
-    function createColorBox(hex, accent) {
-      const container = document.createElement('div');
-      container.className = `color-box group relative aspect-square cursor-pointer overflow-hidden rounded-[1.25rem] border border-white/20`;
-      
-      container.innerHTML = `
-        <div class="absolute inset-0" style="background-color: ${hex};"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/45"></div>
-        <div class="absolute top-2 left-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 z-10 scale-90 origin-top-left transition-all">
-          <button onclick="event.stopPropagation(); analyzeColor('${hex}')" class="rounded-full bg-black/65 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">Analiz</button>
-          <button onclick="event.stopPropagation(); generatePalette('${hex}')" class="rounded-full bg-black/65 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">Palet</button>
-        </div>
-        <div class="absolute inset-x-0 bottom-0 p-2">
-           <div class="rounded-xl bg-black/70 px-2 py-1.5 text-[9px] font-mono text-white backdrop-blur-md">
-            <span class="truncate block">${hex}</span>
-          </div>
-        </div>
-      `;
-
-      container.addEventListener('click', () => copyText(hex));
-      return container;
+    function removeSection(panel) {
+      if (panels.length <= 1) return;
+      panels.splice(panels.indexOf(panel), 1);
+      panel.el.classList.add('leaving');
+      setTimeout(() => panel.el.remove(), 260);
+      syncChrome();
+      persist();
     }
 
-    // AI logic (simplified for speed)
-    async function callGemini(prompt, json = false) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-      const payload = { contents: [{ parts: [{ text: prompt }] }] };
-      if(json) payload.generationConfig = { responseMimeType: "application/json" };
-      const res = await fetch(url, { method:'POST', body: JSON.stringify(payload) });
-      const d = await res.json();
-      return d.candidates[0].content.parts[0].text;
+    // Panel sayısına bağlı arayüz durumları: numaralar, "Sil" görünürlüğü, "Ekle" butonu
+    function syncChrome() {
+      panels.forEach((p, i) => { $('.panel-name', p.el).textContent = `Bölüm ${i + 1}`; });
+      addBtn.disabled = panels.length >= MAX_SECTIONS;
+      if (panels.length === 1) sectionsEl.setAttribute('data-single', '');
+      else sectionsEl.removeAttribute('data-single');
+      updateStats();
     }
 
-    function openModal(title) {
-      modalTitle.textContent = title;
-      aiModal.classList.remove('opacity-0', 'pointer-events-none');
-      modalContent.classList.replace('scale-95', 'scale-100');
-      aiResult.innerHTML = ''; suggestedPalette.innerHTML = ''; aiLoading.classList.remove('hidden');
+    function updateStats() {
+      const all = panels.flatMap(p => p.hexes);
+      $('#statPanels').textContent = panels.length;
+      $('#statColors').textContent = all.length;
+      $('#statUnique').textContent = new Set(all).size;
     }
 
-    function closeModal() {
-      aiModal.classList.add('opacity-0', 'pointer-events-none');
-      modalContent.classList.replace('scale-100', 'scale-95');
+    /* ---------- Renk kutuları ---------- */
+    function createTile(hex, delay) {
+      const color = parseHex(hex);
+      const el = document.createElement('div');
+      el.className = 'tile is-new';
+      el.setAttribute('role', 'listitem');
+      el.style.setProperty('--delay', `${delay}ms`);
+      el.style.setProperty('--swatch', hex);
+      el.dataset.hex = hex;
+      el.innerHTML = `
+        <button type="button" class="tile-copy" data-action="copy"><span class="tile-label"></span></button>
+        <div class="tile-actions">
+          <button type="button" data-action="tile-analyze" aria-label="${hex} rengini analiz et">Analiz</button>
+          <button type="button" data-action="tile-palette" aria-label="${hex} için palet üret">Palet</button>
+        </div>`;
+      el.addEventListener('animationend', () => el.classList.remove('is-new'), { once: true });
+      return { el, color, label: $('.tile-label', el), copyBtn: $('.tile-copy', el) };
     }
 
-    async function analyzeColor(hex) {
-      openModal(`${hex} Analizi`);
-      const r = await callGemini(`${hex} rengini 2 cümlede analiz et.`);
-      aiLoading.classList.add('hidden'); aiResult.innerHTML = r;
+    function renderPanel(panel, { silentCount = false } = {}) {
+      const found = extractHexes(panel.textarea.value);
+      const keep = new Set(found);
+
+      for (const [hex, t] of panel.tiles) {
+        if (!keep.has(hex)) { t.el.remove(); panel.tiles.delete(hex); }
+      }
+      let fresh = 0;
+      for (const hex of found) {
+        if (!panel.tiles.has(hex)) {
+          const t = createTile(hex, Math.min(fresh++, 10) * 40);
+          t.label.textContent = formatColor(t.color);
+          t.copyBtn.setAttribute('aria-label', `${t.label.textContent} kopyala`);
+          panel.tiles.set(hex, t);
+        }
+      }
+      // Sondan başa doğru yerleştir: yalnızca gerekli kutular taşınır, animasyon yeniden başlamaz
+      let next = null;
+      for (let i = found.length - 1; i >= 0; i--) {
+        const el = panel.tiles.get(found[i]).el;
+        if (el.parentNode !== panel.grid || el.nextSibling !== next) panel.grid.insertBefore(el, next);
+        next = el;
+      }
+
+      const changed = panel.hexes.length !== found.length;
+      panel.hexes = found;
+      panel.count.textContent = found.length;
+      if (changed && !silentCount) {
+        panel.count.classList.remove('pop');
+        void panel.count.offsetWidth;
+        panel.count.classList.add('pop');
+      }
+      updateStats();
     }
 
-    async function generatePalette(hex) {
-      openModal(`${hex} Paleti`);
-      const r = await callGemini(`${hex} için 4 uyumlu HEX içeren JSON listesi ver. Format: {"palette":["#..."]}`, true);
-      const data = JSON.parse(r);
-      aiLoading.classList.add('hidden');
-      data.palette.forEach(c => {
-        const d = document.createElement('div');
-        d.className = "w-10 h-10 rounded border border-zinc-800";
-        d.style.backgroundColor = c;
-        d.onclick = () => copyText(c);
-        suggestedPalette.appendChild(d);
-      });
-    }
+    /* ---------- Olay delegasyonu ---------- */
+    sectionsEl.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const panelEl = btn.closest('.panel');
+      const panel = panels.find(p => p.el === panelEl);
+      if (!panel) return;
+      const tile = btn.closest('.tile');
+      const hex = tile && tile.dataset.hex;
 
-    async function analyzeTheme(sid) {
-      const text = document.getElementById(`input-${sid}`).value;
-      openModal("Tema Analizi");
-      const r = await callGemini(`Şu metindeki renklerin temasını 2 cümlede yorumla: ${text}`);
-      aiLoading.classList.add('hidden'); aiResult.innerHTML = r;
-    }
-
-    addBtn.addEventListener('click', addSection);
-    window.addEventListener('load', () => {
-      addSection();
-      addSection();
+      switch (btn.dataset.action) {
+        case 'copy': {
+          const t = panel.tiles.get(hex);
+          copyText(formatColor(t.color));
+          break;
+        }
+        case 'tile-analyze': analyzeColor(hex); break;
+        case 'tile-palette': generatePalette(hex); break;
+        case 'theme': analyzeTheme(panel); break;
+        case 'remove': removeSection(panel); break;
+        case 'clear':
+          panel.textarea.value = '';
+          renderPanel(panel);
+          persist();
+          panel.textarea.focus();
+          break;
+        case 'copy-all': {
+          if (!panel.hexes.length) { showToast('Kopyalanacak renk yok'); break; }
+          const text = panel.hexes.map(h => formatColor(panel.tiles.get(h).color)).join('\n');
+          copyText(text, `${panel.hexes.length} renk kopyalandı`);
+          break;
+        }
+      }
     });
+    addBtn.addEventListener('click', () => addSection('', { focus: true }) && persist());
+
+    /* ---------- Kayıt ---------- */
+    let persistTimer;
+    function persist() {
+      clearTimeout(persistTimer);
+      persistTimer = setTimeout(() => {
+        store.set(LS.state, JSON.stringify({ format, panels: panels.map(p => p.textarea.value) }));
+      }, 200);
+    }
+
+    /* ---------- Diyaloglar ---------- */
+    for (const dlg of [aiModal, keyModal]) {
+      dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+    }
+    aiModal.addEventListener('close', () => { if (aiAbort) aiAbort.abort(); });
+
+    /* ---------- Gemini ---------- */
+    let aiAbort = null;
+    let lastPalette = [];
+
+    function updateKeyDot() { $('#keyDot').classList.toggle('on', !!store.get(LS.key)); }
+    $('#keyBtn').addEventListener('click', () => {
+      $('#keyInput').value = store.get(LS.key) || '';
+      keyModal.showModal();
+    });
+    $('#keyForm').addEventListener('submit', () => {
+      const v = $('#keyInput').value.trim();
+      if (v) { store.set(LS.key, v); showToast('Anahtar kaydedildi'); }
+      updateKeyDot();
+    });
+    $('#keyClear').addEventListener('click', () => {
+      store.del(LS.key);
+      $('#keyInput').value = '';
+      updateKeyDot();
+      keyModal.close();
+      showToast('Anahtar silindi');
+    });
+
+    const aiCache = new Map(); // aynı soru tekrar sorulursa kota harcanmaz
+
+    async function callGemini(prompt, { signal } = {}) {
+      const key = store.get(LS.key);
+      if (!key) throw new Error('NO_KEY');
+      if (aiCache.has(prompt)) return aiCache.get(prompt);
+      const payload = { contents: [{ parts: [{ text: prompt }] }] };
+      const status = $('.loading-text', aiLoading);
+      let quotaWait = null; // kota hatasında önerilen bekleme (sn)
+      let lastError;
+      // Kota (429) veya yoğunluk (500/503) varsa aynı modelde beklemeden sıradakine geç.
+      // Her modelin ayrı kotası var, bu yüzden yedek modeller bir sonraki denemeyi kurtarır.
+      for (const [i, model] of MODELS.entries()) {
+        status.textContent = i ? 'Başka model deneniyor…' : 'Gemini çalışıyor…';
+        // Takılan istek 12 sn sonra kesilir; kullanıcı pencereyi kapatırsa da iptal olur
+        const attemptSignal = AbortSignal.any
+          ? AbortSignal.any([signal, AbortSignal.timeout(12000)])
+          : signal;
+        let res, data;
+        try {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: 'POST',
+            signal: attemptSignal,
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify(payload)
+          });
+          data = await res.json().catch(() => ({}));
+        } catch (err) {
+          if (signal.aborted) throw err;
+          lastError = new Error('Sunucu zamanında yanıt vermedi.');
+          continue;
+        }
+        if (res.ok) {
+          const text = data.candidates && data.candidates[0] && data.candidates[0].content.parts[0].text;
+          if (!text) { lastError = new Error('Gemini boş yanıt döndürdü.'); continue; }
+          aiCache.set(prompt, text);
+          return text;
+        }
+        const msg = (data.error && data.error.message) || `Sunucu hatası (${res.status})`;
+        if (res.status === 429) {
+          const m = /retry in ([\d.]+)s/i.exec(msg);
+          if (m) quotaWait = Math.ceil(+m[1]);
+          lastError = new Error(`Ücretsiz kullanım kotası doldu (modeller dakikada birkaç isteğe izin veriyor). ${quotaWait ? `Yaklaşık ${quotaWait} sn sonra tekrar dene.` : 'Biraz sonra tekrar dene.'}`);
+          continue;
+        }
+        if ([500, 503].includes(res.status)) { lastError = new Error('Sunucu şu an yoğun, biraz sonra tekrar dene.'); continue; }
+        throw new Error(msg);
+      }
+      throw lastError;
+    }
+
+    function openAiModal(title) {
+      if (aiAbort) aiAbort.abort();
+      aiAbort = new AbortController();
+      $('#modalTitle').textContent = title;
+      aiResult.textContent = '';
+      aiResult.classList.remove('error');
+      paletteEl.replaceChildren();
+      aiActions.hidden = true;
+      aiLoading.hidden = false;
+      if (!aiModal.open) aiModal.showModal();
+      return aiAbort;
+    }
+
+    async function runAi(title, task) {
+      if (!store.get(LS.key)) {
+        $('#keyInput').value = '';
+        keyModal.showModal();
+        showToast('Önce Gemini API anahtarını gir');
+        return;
+      }
+      const ctrl = openAiModal(title);
+      try {
+        await task(ctrl.signal);
+      } catch (err) {
+        if (ctrl.signal.aborted) return;
+        aiResult.classList.add('error');
+        aiResult.textContent = `Hata: ${err.message}`;
+      } finally {
+        if (!ctrl.signal.aborted) aiLoading.hidden = true;
+      }
+    }
+
+    function analyzeColor(hex) {
+      return runAi(`${hex} Analizi`, async signal => {
+        aiResult.textContent = await callGemini(`${hex} rengini Türkçe olarak 2 cümlede analiz et.`, { signal });
+      });
+    }
+
+    function hslToHex(h, s, l) {
+      s /= 100; l /= 100;
+      const k = n => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+      return '#' + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    // Palet renk teorisiyle tarayıcıda üretilir: anında çalışır, API anahtarı ve kota gerektirmez
+    function generatePalette(hex) {
+      const [h, s, l] = toHsl(parseHex(hex));
+      let colors, note;
+      if (s < 10) {
+        // Gri tonlarında renk tekerleği anlamsız; açıklık değiştirilir
+        const clamp = v => Math.max(8, Math.min(92, v));
+        colors = [-30, -15, 15, 30].map(d => hslToHex(h, s, clamp(l + d)));
+        note = 'Nötr renk: açıklık basamakları.';
+      } else {
+        colors = [30, -30, 120, 180].map(d => hslToHex((h + d + 360) % 360, s, l));
+        note = 'Komşu (±30°), üçlü (120°) ve tamamlayıcı (180°) uyumlar.';
+      }
+      lastPalette = colors;
+      openAiModal(`${hex} Paleti`);
+      aiLoading.hidden = true;
+      aiResult.textContent = note;
+      for (const c of colors) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'swatch';
+        b.title = `${c} kopyala`;
+        b.style.setProperty('--swatch', c);
+        b.innerHTML = '<i></i><span></span>';
+        $('span', b).textContent = c;
+        b.addEventListener('click', () => copyText(c));
+        paletteEl.appendChild(b);
+      }
+      aiActions.hidden = false;
+    }
+
+    function analyzeTheme(panel) {
+      if (!panel.hexes.length) { showToast('Önce panele renk ekle'); return; }
+      return runAi('Tema Analizi', async signal => {
+        aiResult.textContent = await callGemini(
+          `Şu renklerden oluşan paletin temasını ve havasını Türkçe olarak 2 cümlede yorumla: ${panel.hexes.join(', ')}`,
+          { signal }
+        );
+      });
+    }
+
+    $('#copyPaletteBtn').addEventListener('click', () => copyText(lastPalette.join('\n'), 'Palet kopyalandı'));
+    $('#paletteToPanelBtn').addEventListener('click', () => {
+      const panel = addSection(lastPalette.join('\n'), { focus: true });
+      if (!panel) { showToast('Panel sınırına ulaşıldı (4)'); return; }
+      persist();
+      aiModal.close();
+    });
+
+    /* ---------- Başlangıç ---------- */
+    (function init() {
+      let saved = null;
+      try { saved = JSON.parse(store.get(LS.state)); } catch (e) {}
+      if (saved && ['hex', 'rgb', 'hsl'].includes(saved.format)) {
+        format = saved.format;
+        for (const b of $('#formatSeg').children) b.setAttribute('aria-pressed', String(b.dataset.format === format));
+      }
+      const texts = saved && Array.isArray(saved.panels) && saved.panels.length
+        ? saved.panels.slice(0, MAX_SECTIONS).map(String)
+        : ['#3B82F6\n#10B981\n#F59E0B\n#EF4444', ''];
+      texts.forEach(t => addSection(t));
+      updateKeyDot();
+    })();
   </script>
 </body>
 </html>
